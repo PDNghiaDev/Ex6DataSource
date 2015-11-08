@@ -3,23 +3,22 @@ package com.gmail.pdnghiadev.ex6datasource;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.widget.RelativeLayout;
-import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.gmail.pdnghiadev.ex6datasource.adapter.RedditAdapter;
 import com.gmail.pdnghiadev.ex6datasource.model.Children;
@@ -27,6 +26,7 @@ import com.gmail.pdnghiadev.ex6datasource.model.ChildrenConverter;
 import com.gmail.pdnghiadev.ex6datasource.model.CustomVolleyRequestQueue;
 import com.gmail.pdnghiadev.ex6datasource.model.RedditPost;
 import com.gmail.pdnghiadev.ex6datasource.model.RedditPostConverter;
+import com.gmail.pdnghiadev.ex6datasource.ultils.EndlessRecyclerOnScrollListener;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -36,83 +36,189 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class PostListActivity extends AppCompatActivity implements Response.ErrorListener, Response.Listener<JSONObject> {
-    private List<Children> dataReddit = new ArrayList<>();
+public class PostListActivity extends AppCompatActivity {
+
+    private List<Children> listChildren = new ArrayList<>();
     private RequestQueue mRequestQueue;
-    private RecyclerView recyclerView;
+    private RecyclerView mRecyclerView;
     private RedditAdapter adapter;
-    private SwipeRefreshLayout swipeRefreshLayout;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
+    private Gson gson;
+    private NetworkInfo networkInfo;
+    private RelativeLayout mRelativeLayout;
+    private LinearLayoutManager mLinearLayoutManager;
+
+    private int counter = 0;
+    private String after_id;
+    private static final String androidNew = "androiddev/new";
+    private static final String subredditUrl = "http://www.reddit.com/r/";
+    private static final String jsonEnd = "/.json";
+    private static final String qCount = "?count=";
+    private static final String after = "&after=";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.post_list);
 
-        swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe);
+        loadComponents();
 
-        recyclerView = (RecyclerView) findViewById(R.id.post_list);
-        recyclerView.setHasFixedSize(true);
+        mRecyclerView.setHasFixedSize(true);
+        mLinearLayoutManager = new LinearLayoutManager(this);
+        mRecyclerView.setLayoutManager(mLinearLayoutManager);
+
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.registerTypeAdapter(RedditPost.class, new RedditPostConverter());
+        gsonBuilder.registerTypeAdapter(Children.class, new ChildrenConverter());
+        gson = gsonBuilder.create();
+
 
         // Check for network
         ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-        if(networkInfo != null && networkInfo.isConnected()){// Connected
-
-            mRequestQueue = CustomVolleyRequestQueue.getInstance(this.getApplicationContext())
-                    .getRequestQueue();
-
-            String url = "https://www.reddit.com/r/androiddev/new6456.json";
-            JsonObjectRequest json = new JsonObjectRequest(Request.Method.GET, url, new JSONObject(), this, this);
-            mRequestQueue.add(json);
-        }else {//Not connect
-            recyclerView.setVisibility(View.INVISIBLE);
-
-            RelativeLayout re = (RelativeLayout) findViewById(R.id.layout_not_connect);
-            re.setVisibility(View.VISIBLE);
+        networkInfo = connMgr.getActiveNetworkInfo();
+        if (networkInfo != null && networkInfo.isConnected()) {// Connected
+            loadData(androidNew);
+        } else {//Not connect
+            mRecyclerView.setVisibility(View.INVISIBLE);
+            mRelativeLayout.setVisibility(View.VISIBLE);
         }
 
-        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                swipeRefreshLayout.setRefreshing(true);
+                mSwipeRefreshLayout.setRefreshing(true);
 
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
-
-                        swipeRefreshLayout.setRefreshing(false);
+                        if (networkInfo != null && networkInfo.isConnected()) {
+                            loadData(androidNew);
+                            setLoadMore();
+                        }
+                        mSwipeRefreshLayout.setRefreshing(false);
                     }
                 }, 3000);
 
             }
         });
 
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
+        setLoadMore();
 
     }
 
-    @Override
-    public void onErrorResponse(VolleyError error) {
+    // Set Load More for RecyclerView
+    private void setLoadMore() {
+        mRecyclerView.addOnScrollListener(new EndlessRecyclerOnScrollListener(mLinearLayoutManager) {
+            @Override
+            protected void onLoadMore(int current_page) {
+                int lastFistVisiblePosition = ((LinearLayoutManager) mRecyclerView.getLayoutManager()).findFirstVisibleItemPosition();
+                ((LinearLayoutManager) mRecyclerView.getLayoutManager()).scrollToPosition(lastFistVisiblePosition);
 
+                Void[] pa = null;
+                new BackgroundTask().execute(pa);
+
+            }
+        });
     }
 
-    @Override
-    public void onResponse(JSONObject response) {
+    // Load components of UI
+    private void loadComponents() {
+        mRecyclerView = (RecyclerView) findViewById(R.id.post_list);
+        mRelativeLayout = (RelativeLayout) findViewById(R.id.layout_not_connect);
+        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe);
+    }
 
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(RedditPost.class, new RedditPostConverter());
-        gsonBuilder.registerTypeAdapter(Children.class, new ChildrenConverter());
-        Gson gson = gsonBuilder.create();
-        RedditPost redditPost = gson.fromJson(response.toString(), RedditPost.class);
-        Collections.addAll(dataReddit, redditPost.getChildrens());
-        adapter = new RedditAdapter(dataReddit, getResources().getColor(R.color.colorStickyPost));
-        recyclerView.setAdapter(adapter);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+    // Load data from server and parse JSON
+    public void loadData(String subreddit) {
+        counter = 0;
 
+        subreddit = subredditUrl + subreddit + jsonEnd;
+
+        adapter = new RedditAdapter(listChildren, getResources().getColor(R.color.colorStickyPost));
+        mRecyclerView.setAdapter(adapter);
+
+        mRequestQueue = CustomVolleyRequestQueue.getInstance(getApplicationContext()).getRequestQueue();
+
+        adapter.clearAdapter();
+
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, subreddit, null, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+
+
+                RedditPost redditPost = gson.fromJson(response.toString(), RedditPost.class);
+                after_id = redditPost.getAfter();
+
+                Collections.addAll(listChildren, redditPost.getChildrens());
+
+
+                adapter.notifyDataSetChanged();
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                VolleyLog.d("TAG", "Error" + error.getMessage());
+
+            }
+        });
+
+        mRequestQueue.add(jsonObjectRequest);
+    }
+
+    // LoadMore data from server and parse JSON
+    public void loadMore(String subreddit) {
+        counter = counter + 25;
+        String count = String.valueOf(counter);
+        subreddit = androidNew;
+
+        subreddit = subredditUrl + subreddit + jsonEnd + qCount + count + after + after_id;
+
+        Log.i("TAG", subreddit);
+
+        mRequestQueue = CustomVolleyRequestQueue.getInstance(getApplicationContext()).getRequestQueue();
+
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, subreddit, null, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+
+
+                RedditPost redditPost = gson.fromJson(response.toString(), RedditPost.class);
+                after_id = redditPost.getAfter();
+                Collections.addAll(listChildren, redditPost.getChildrens());
+                adapter.notifyDataSetChanged();
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                VolleyLog.d("TAG", "Error" + error.getMessage());
+
+            }
+        });
+
+        mRequestQueue.add(jsonObjectRequest);
+    }
+
+    private class BackgroundTask extends AsyncTask<Void, Void, Void> {
+        @Override
+        protected Void doInBackground(Void... params) {
+            try {
+                listChildren.add(null);
+
+                Thread.sleep(3000);
+
+                listChildren.remove(null);
+                adapter.notifyItemRemoved(listChildren.size());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            loadMore(androidNew);
+        }
     }
 
 }

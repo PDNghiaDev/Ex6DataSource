@@ -1,71 +1,84 @@
 package com.gmail.pdnghiadev.ex6datasource.adapter;
 
-import android.content.Context;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.gmail.pdnghiadev.ex6datasource.R;
 import com.gmail.pdnghiadev.ex6datasource.model.Children;
 import com.gmail.pdnghiadev.ex6datasource.ultils.DateConverter;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.List;
-import java.util.Locale;
-import java.util.TimeZone;
 
 /**
  * Created by PDNghiaDev on 11/2/2015.
  */
-public class RedditAdapter extends RecyclerView.Adapter<RedditAdapter.RedditViewHolder>{
-    private List<Children> mChildren;
+public class RedditAdapter extends RecyclerView.Adapter{
+    private List<Children> listChildrend;
     private int color;
+    private final int VIEW_ITEM = 1;
+    private final int VIEW_PROG = 0;
 
     public RedditAdapter(List<Children> mChildren, int color) {
-        this.mChildren = mChildren;
+        this.listChildrend = mChildren;
         this.color = color;
     }
 
     @Override
-    public RedditViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        Context context = parent.getContext();
-        LayoutInflater inflater = LayoutInflater.from(context);
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
 
-        // Inflate the custom layout
-        View redditView = inflater.inflate(R.layout.item_post, parent, false);
+        RecyclerView.ViewHolder vh;
 
-        // Return a new holder instance
-        RedditViewHolder viewHolder = new RedditViewHolder(redditView);
-        return viewHolder;
+        if (viewType == VIEW_ITEM){
+            // Inflate the custom layout
+            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_post, parent, false);
+
+            vh = new RedditViewHolder(v);
+        }else {
+            // Inflate the custom layout
+            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.progressbar_item, parent, false);
+
+            vh = new ProgressViewHolder(v);
+        }
+
+        return vh;
     }
 
     @Override
-    public void onBindViewHolder(RedditViewHolder holder, int position) {
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         DateConverter dateConverter = new DateConverter();
-        Children  children = mChildren.get(position);
+        Children  children = listChildrend.get(position);
 
-        holder.mScore.setText(String.valueOf(children.getScore()));
-        holder.mAuthor.setText(children.getAuthor());
-        holder.mSubreddit.setText(children.getSubreddit());
-        if (children.isStickyPost()){
-            holder.mTitle.setTextColor(color);
-            holder.mTitle.setText(children.getTitle());
+        if (holder instanceof RedditViewHolder){
+            ((RedditViewHolder) holder).mScore.setText(String.valueOf(children.getScore()));
+            ((RedditViewHolder) holder).mAuthor.setText(children.getAuthor());
+            ((RedditViewHolder) holder).mSubreddit.setText(children.getSubreddit());
+            if (children.isStickyPost()){
+                ((RedditViewHolder) holder).mTitle.setTextColor(color);
+                ((RedditViewHolder) holder).mTitle.setText(children.getTitle());
+            }else {
+                ((RedditViewHolder) holder).mTitle.setText(children.getTitle());
+            }
+
+            ((RedditViewHolder) holder).mCountComment.setText(String.valueOf(children.getCommentCount()));
+            ((RedditViewHolder) holder).mCreateUTC.setText(dateConverter.displayTime(children.getCreateUTC()));
         }else {
-            holder.mTitle.setText(children.getTitle());
+            ((ProgressViewHolder) holder).progressBar.setIndeterminate(true);
         }
 
-        holder.mCountComment.setText(String.valueOf(children.getCommentCount()));
-        holder.mCreateUTC.setText(dateConverter.displayTime(children.getCreateUTC()));
+    }
 
+    public void clearAdapter(){
+        listChildrend.clear();
+        notifyDataSetChanged();
     }
 
     @Override
     public int getItemCount() {
-        return mChildren.size();
+        return (listChildrend != null ? listChildrend.size() : 0);
     }
 
     public static class RedditViewHolder extends RecyclerView.ViewHolder{
@@ -74,12 +87,27 @@ public class RedditAdapter extends RecyclerView.Adapter<RedditAdapter.RedditView
         public RedditViewHolder(View itemView) {
             super(itemView);
 
-            mScore = (TextView) itemView.findViewById(R.id.txt_score);
-            mAuthor = (TextView) itemView.findViewById(R.id.txt_author);
-            mSubreddit = (TextView) itemView.findViewById(R.id.txt_subreddit);
-            mTitle = (TextView) itemView.findViewById(R.id.txt_title);
-            mCountComment = (TextView) itemView.findViewById(R.id.txt_count_comment);
-            mCreateUTC = (TextView) itemView.findViewById(R.id.txt_createdUTC);
+            this.mScore = (TextView) itemView.findViewById(R.id.txt_score);
+            this.mAuthor = (TextView) itemView.findViewById(R.id.txt_author);
+            this.mSubreddit = (TextView) itemView.findViewById(R.id.txt_subreddit);
+            this.mTitle = (TextView) itemView.findViewById(R.id.txt_title);
+            this.mCountComment = (TextView) itemView.findViewById(R.id.txt_count_comment);
+            this.mCreateUTC = (TextView) itemView.findViewById(R.id.txt_createdUTC);
         }
+    }
+
+    public static class ProgressViewHolder extends RecyclerView.ViewHolder{
+        public ProgressBar progressBar;
+
+        public ProgressViewHolder(View view){
+            super(view);
+
+            this.progressBar = (ProgressBar) view.findViewById(R.id.progressBar1);
+        }
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return listChildrend.get(position) != null ? VIEW_ITEM : VIEW_PROG;
     }
 }

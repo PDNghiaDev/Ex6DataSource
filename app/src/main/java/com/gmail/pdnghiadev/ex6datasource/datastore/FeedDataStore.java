@@ -1,5 +1,8 @@
 package com.gmail.pdnghiadev.ex6datasource.datastore;
 
+import android.content.Context;
+
+import com.gmail.pdnghiadev.ex6datasource.model.Children;
 import com.gmail.pdnghiadev.ex6datasource.model.RedditPost;
 
 import java.util.List;
@@ -9,9 +12,9 @@ import java.util.List;
  */
 public interface FeedDataStore {
     interface OnRedditPostRetrievedListener{
-        void onRedditPostRetrieved(List<RedditPost> postList, String after, Exception ex);
+        void onRedditPostRetrieved(List<Children> childrens, String after, Exception ex);
     }
 
-    void getPostList(String topic, String before, String after,
-                     OnRedditPostRetrievedListener onRedditPostRetrievedListener);
+    void loadData();
+    void loadMore();
 }
