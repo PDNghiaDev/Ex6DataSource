@@ -16,31 +16,30 @@ import java.util.List;
 /**
  * Created by PDNghiaDev on 11/2/2015.
  */
-public class RedditAdapter extends RecyclerView.Adapter{
+public class RedditAdapter extends RecyclerView.Adapter {
     private List<Children> listChildrend;
-    private int color;
+    private int isSticky;
+    private int isNotSticky;
     private final int VIEW_ITEM = 1;
     private final int VIEW_PROG = 0;
 
-    public RedditAdapter(List<Children> mChildren, int color) {
+    public RedditAdapter(List<Children> mChildren, int isSticky, int isNotSticky) {
         this.listChildrend = mChildren;
-        this.color = color;
+        this.isSticky = isSticky;
+        this.isNotSticky = isNotSticky;
     }
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-
         RecyclerView.ViewHolder vh;
 
-        if (viewType == VIEW_ITEM){
+        if (viewType == VIEW_ITEM) {
             // Inflate the custom layout
             View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_post, parent, false);
-
             vh = new RedditViewHolder(v);
-        }else {
+        } else {
             // Inflate the custom layout
             View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.progressbar_item, parent, false);
-
             vh = new ProgressViewHolder(v);
         }
 
@@ -50,28 +49,29 @@ public class RedditAdapter extends RecyclerView.Adapter{
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         DateConverter dateConverter = new DateConverter();
-        Children  children = listChildrend.get(position);
+        Children children = listChildrend.get(position);
 
-        if (holder instanceof RedditViewHolder){
+        if (holder instanceof RedditViewHolder) {
+
             ((RedditViewHolder) holder).mScore.setText(String.valueOf(children.getScore()));
             ((RedditViewHolder) holder).mAuthor.setText(children.getAuthor());
             ((RedditViewHolder) holder).mSubreddit.setText(children.getSubreddit());
-            if (children.isStickyPost()){
-                ((RedditViewHolder) holder).mTitle.setTextColor(color);
-                ((RedditViewHolder) holder).mTitle.setText(children.getTitle());
-            }else {
-                ((RedditViewHolder) holder).mTitle.setText(children.getTitle());
+            if (children.isStickyPost()) {
+                ((RedditViewHolder) holder).mTitle.setTextColor(isSticky);
+            } else {
+                ((RedditViewHolder) holder).mTitle.setTextColor(isNotSticky);
             }
-
+            ((RedditViewHolder) holder).mTitle.setText(children.getTitle());
             ((RedditViewHolder) holder).mCountComment.setText(String.valueOf(children.getCommentCount()));
             ((RedditViewHolder) holder).mCreateUTC.setText(dateConverter.displayTime(children.getCreateUTC()));
-        }else {
+
+        } else {
             ((ProgressViewHolder) holder).progressBar.setIndeterminate(true);
         }
 
     }
 
-    public void clearAdapter(){
+    public void clearAdapter() {
         listChildrend.clear();
         notifyDataSetChanged();
     }
@@ -81,7 +81,7 @@ public class RedditAdapter extends RecyclerView.Adapter{
         return (listChildrend != null ? listChildrend.size() : 0);
     }
 
-    public static class RedditViewHolder extends RecyclerView.ViewHolder{
+    public static class RedditViewHolder extends RecyclerView.ViewHolder {
         public TextView mScore, mAuthor, mSubreddit, mTitle, mCountComment, mCreateUTC;
 
         public RedditViewHolder(View itemView) {
@@ -96,10 +96,10 @@ public class RedditAdapter extends RecyclerView.Adapter{
         }
     }
 
-    public static class ProgressViewHolder extends RecyclerView.ViewHolder{
+    public static class ProgressViewHolder extends RecyclerView.ViewHolder {
         public ProgressBar progressBar;
 
-        public ProgressViewHolder(View view){
+        public ProgressViewHolder(View view) {
             super(view);
 
             this.progressBar = (ProgressBar) view.findViewById(R.id.progressBar1);

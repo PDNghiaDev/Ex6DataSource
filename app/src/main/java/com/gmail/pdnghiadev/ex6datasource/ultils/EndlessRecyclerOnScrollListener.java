@@ -30,6 +30,13 @@ public abstract class EndlessRecyclerOnScrollListener extends RecyclerView.OnScr
         totalItemCount = mLinearLayoutManager.getItemCount();
         fistVisibleItem = mLinearLayoutManager.findFirstVisibleItemPosition();
 
+        // Refresh
+        if (fistVisibleItem == 0){
+            onRefresh();
+        }else {
+            notRefresh();
+        }
+
         if (loading){
             if (totalItemCount > previousTotal){
                 loading = false;
@@ -47,6 +54,10 @@ public abstract class EndlessRecyclerOnScrollListener extends RecyclerView.OnScr
             loading = true;
         }
     }
+
+    protected abstract void notRefresh();
+
+    protected abstract void onRefresh();
 
     protected abstract void onLoadMore(int current_page);
 }
