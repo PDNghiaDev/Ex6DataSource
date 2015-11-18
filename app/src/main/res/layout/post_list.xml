@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <FrameLayout
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -14,6 +14,7 @@
             android:id="@+id/post_list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_above="@+id/loadMoreItem"
             android:visibility="visible" />
 
         <RelativeLayout
@@ -21,7 +22,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:visibility="invisible">
+            android:visibility="invisible"
+            android:layout_centerVertical="true"
+            android:layout_centerHorizontal="true">
 
             <TextView
                 android:id="@+id/title_not_connect"
@@ -44,9 +47,18 @@
                 android:paddingTop="15dp"
                 android:text="@string/title_btn_retry"
                 android:textColor="@android:color/white"
-                android:textSize="20sp" />
+                android:textSize="20sp"
+                />
         </RelativeLayout>
 
-    </FrameLayout>
+        <include
+            android:id="@+id/loadMoreItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            layout="@layout/progressbar_item"
+            android:visibility="gone" />
+
+    </RelativeLayout>
 
 </android.support.v4.widget.SwipeRefreshLayout>

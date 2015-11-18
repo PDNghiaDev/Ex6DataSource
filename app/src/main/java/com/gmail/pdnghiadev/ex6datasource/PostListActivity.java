@@ -3,14 +3,15 @@ package com.gmail.pdnghiadev.ex6datasource;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.View;
+import android.widget.AbsListView;
 import android.widget.RelativeLayout;
 
 import com.android.volley.Request;
@@ -25,7 +26,6 @@ import com.gmail.pdnghiadev.ex6datasource.model.ChildrenConverter;
 import com.gmail.pdnghiadev.ex6datasource.model.CustomVolleyRequestQueue;
 import com.gmail.pdnghiadev.ex6datasource.model.RedditPost;
 import com.gmail.pdnghiadev.ex6datasource.model.RedditPostConverter;
-import com.gmail.pdnghiadev.ex6datasource.ultils.EndlessRecyclerOnScrollListener;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -44,7 +44,7 @@ public class PostListActivity extends AppCompatActivity {
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private Gson mGson;
     private NetworkInfo mNetworkInfo;
-    private RelativeLayout mRelativeLayout;
+    private RelativeLayout mRelativeLayout, mBottomLayout;
     private LinearLayoutManager mLinearLayoutManager;
 
     private int counter = 0;
@@ -54,6 +54,8 @@ public class PostListActivity extends AppCompatActivity {
     private static final String JSON_END = "/.json";
     private static final String COUNT = "?count=";
     private static final String AFTER = "&after=";
+    int fistVisibleItem, visibleItemCount, totalItemCount;
+    boolean loading = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +67,7 @@ public class PostListActivity extends AppCompatActivity {
         mRecyclerView.setHasFixedSize(true);
         mLinearLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLinearLayoutManager);
+        mSwipeRefreshLayout.setEnabled(false);
 
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(RedditPost.class, new RedditPostConverter());
@@ -80,56 +83,63 @@ public class PostListActivity extends AppCompatActivity {
             mRecyclerView.setVisibility(View.INVISIBLE);
             mRelativeLayout.setVisibility(View.VISIBLE);
         }
-        mSwipeRefreshLayout.setEnabled(false);
 
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        setLoadMore();
-    }
-
-    // Set Load More for RecyclerView
-    private void setLoadMore() {
-        mRecyclerView.addOnScrollListener(new EndlessRecyclerOnScrollListener(mLinearLayoutManager) {
+        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
-            protected void onLoadMore(int current_page) {
-                int lastFistVisiblePosition = ((LinearLayoutManager) mRecyclerView.getLayoutManager()).findFirstVisibleItemPosition();
-                ((LinearLayoutManager) mRecyclerView.getLayoutManager()).scrollToPosition(lastFistVisiblePosition);
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
 
-                Void[] pa = null;
-                new BackgroundTask().execute(pa);
-
+                if (newState == AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL){
+                    loading = true;
+                }
             }
 
             @Override
-            protected void onRefresh() {
-                mSwipeRefreshLayout.setEnabled(true);
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
 
-                mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-                    @Override
-                    public void onRefresh() {
-                        mSwipeRefreshLayout.setRefreshing(true);
+                visibleItemCount = mLinearLayoutManager.getChildCount();
+                totalItemCount = mLinearLayoutManager.getItemCount();
+                fistVisibleItem = mLinearLayoutManager.findFirstVisibleItemPosition();
 
-                        new Handler().postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (mNetworkInfo != null && mNetworkInfo.isConnected()) {
-                                    load(null);
+                if (fistVisibleItem == 0){ // Pull to refresh
+                    mSwipeRefreshLayout.setEnabled(true);
+                    mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+                        @Override
+                        public void onRefresh() {
+                            mSwipeRefreshLayout.setRefreshing(true);
+
+                            new Handler().postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (mNetworkInfo != null && mNetworkInfo.isConnected()) {
+                                        counter = 0;
+                                        load(null);
+                                    }
+                                    mSwipeRefreshLayout.setRefreshing(false);
                                 }
-                                mSwipeRefreshLayout.setRefreshing(false);
-                            }
-                        }, 3000);
-                    }
-                });
-            }
+                            }, 3000);
+                        }
+                    });
+                }else { // Scroll content
+                    mSwipeRefreshLayout.setEnabled(false);
+                }
 
-            @Override
-            protected void notRefresh() {
-                mSwipeRefreshLayout.setEnabled(false);
+                if (loading && (visibleItemCount + fistVisibleItem) == totalItemCount){ // LoadMore
+                    loading = false;
+
+                    mBottomLayout.setVisibility(View.VISIBLE);
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            load(afterId);
+                            mBottomLayout.setVisibility(View.GONE);
+                        }
+                    }, 3000);
+                }
             }
         });
+
     }
 
     // Load components of UI
@@ -137,20 +147,24 @@ public class PostListActivity extends AppCompatActivity {
         mRecyclerView = (RecyclerView) findViewById(R.id.post_list);
         mRelativeLayout = (RelativeLayout) findViewById(R.id.layout_not_connect);
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe);
+        mBottomLayout = (RelativeLayout) findViewById(R.id.loadMoreItem);
     }
 
     public void load(String after) {
         String subreddit = ANDROIDDEV;
 
         if (after == null) { //LoadData
-            counter = 0;
             subreddit = SUBREDDIT_URL + subreddit + JSON_END;
             mAdapter = new RedditAdapter(mListChildren, getResources().getColor(R.color.colorStickyPost), getResources().getColor(android.R.color.black));
             mRecyclerView.setAdapter(mAdapter);
             mAdapter.clearAdapter();
+
+            Log.i("TAG LOAD", subreddit);
         } else { //LoadMore
             counter = counter + 25;
             subreddit = SUBREDDIT_URL + subreddit + JSON_END + COUNT + counter + AFTER + afterId;
+
+            Log.i("TAG LOADMORE", subreddit);
         }
 
         mRequestQueue = CustomVolleyRequestQueue.getInstance(getApplicationContext()).getRequestQueue();
@@ -173,26 +187,4 @@ public class PostListActivity extends AppCompatActivity {
         mRequestQueue.add(jsonObjectRequest);
 
     }
-
-    private class BackgroundTask extends AsyncTask<Void, Void, Void> {
-        @Override
-        protected Void doInBackground(Void... params) {
-            try {
-                mListChildren.add(null);
-                Thread.sleep(3000);
-                mListChildren.remove(null);
-                mAdapter.notifyItemRemoved(mListChildren.size());
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-            load(afterId);
-        }
-    }
-
 }

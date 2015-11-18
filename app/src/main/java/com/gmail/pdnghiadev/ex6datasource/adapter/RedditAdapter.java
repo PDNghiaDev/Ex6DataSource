@@ -1,6 +1,7 @@
 package com.gmail.pdnghiadev.ex6datasource.adapter;
 
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,6 +30,7 @@ public class RedditAdapter extends RecyclerView.Adapter {
         this.isNotSticky = isNotSticky;
     }
 
+
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         RecyclerView.ViewHolder vh;
@@ -39,6 +41,7 @@ public class RedditAdapter extends RecyclerView.Adapter {
             vh = new RedditViewHolder(v);
         } else {
             // Inflate the custom layout
+            Log.i("TAG", "PROG VIEW");
             View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.progressbar_item, parent, false);
             vh = new ProgressViewHolder(v);
         }
@@ -66,7 +69,8 @@ public class RedditAdapter extends RecyclerView.Adapter {
             ((RedditViewHolder) holder).mCreateUTC.setText(dateConverter.displayTime(children.getCreateUTC()));
 
         } else {
-            ((ProgressViewHolder) holder).progressBar.setIndeterminate(true);
+            Log.i("TAG", "ROG");
+                    ((ProgressViewHolder) holder).progressBar.setIndeterminate(true);
         }
 
     }
@@ -102,7 +106,7 @@ public class RedditAdapter extends RecyclerView.Adapter {
         public ProgressViewHolder(View view) {
             super(view);
 
-            this.progressBar = (ProgressBar) view.findViewById(R.id.progressBar1);
+            this.progressBar = (ProgressBar) view.findViewById(R.id.progressBar);
         }
     }
 
