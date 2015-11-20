@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorAuthorName">#25657d</color>
+    <color name="colorStickyPost">#87a414</color>
+    <color name="colorTitle">#ffffff</color>
+    <color name="colorBackground">#303030</color>
+    <color name="colorBackgroundCardView">#181818</color>
+    <color name="colorComment">#4e4e4e</color>
+</resources>

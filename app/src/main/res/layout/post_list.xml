@@ -15,7 +15,8 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_above="@+id/loadMoreItem"
-            android:visibility="visible" />
+            android:visibility="visible"
+            android:background="@color/colorBackground"/>
 
         <RelativeLayout
             android:id="@+id/layout_not_connect"

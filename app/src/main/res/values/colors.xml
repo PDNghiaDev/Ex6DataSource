@@ -6,4 +6,8 @@
     <color name="colorStickyPost">#387801</color>
     <color name="colorAuthorName">#0A295A</color>
     <color name="colorSubredditName">#0A295A</color>
+    <color name="colorTitle">#000000</color>
+    <color name="colorBackground">#eeeeee</color>
+    <color name="colorBackgroundCardView">#ffffff</color>
+    <color name="colorComment">#828282</color>
 </resources>
