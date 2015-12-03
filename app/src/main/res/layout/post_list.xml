@@ -13,10 +13,18 @@
         <android.support.v7.widget.RecyclerView
             android:id="@+id/post_list"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_above="@+id/loadMoreItem"
             android:visibility="visible"
             android:background="@color/colorBackground"/>
+
+        <include
+            android:id="@+id/loadMoreItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            layout="@layout/progressbar_item"
+            android:visibility="gone" />
 
         <RelativeLayout
             android:id="@+id/layout_not_connect"
@@ -50,15 +58,8 @@
                 android:textColor="@android:color/white"
                 android:textSize="20sp"
                 />
-        </RelativeLayout>
 
-        <include
-            android:id="@+id/loadMoreItem"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            layout="@layout/progressbar_item"
-            android:visibility="gone" />
+        </RelativeLayout>
 
     </RelativeLayout>
 
