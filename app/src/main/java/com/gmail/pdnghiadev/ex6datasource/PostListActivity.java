@@ -97,7 +97,13 @@ public class PostListActivity extends AppCompatActivity {
         ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         mNetworkInfo = connMgr.getActiveNetworkInfo();
         if (mNetworkInfo != null && mNetworkInfo.isConnected()) {// Connected
-            load(null);
+            mSwipeRefreshLayout.post(new Runnable() {
+                @Override
+                public void run() {
+                    mSwipeRefreshLayout.setRefreshing(true);
+                    load(null);
+                }
+            });
         } else {//Not connect
             mRecyclerView.setVisibility(View.INVISIBLE);
             mRelativeLayout.setVisibility(View.VISIBLE);
@@ -114,6 +120,8 @@ public class PostListActivity extends AppCompatActivity {
     }
 
     public void load(String after) {
+        mSwipeRefreshLayout.setRefreshing(true);
+
         String subreddit = ANDROIDDEV;
 
         if (after == null) { //LoadData
@@ -135,18 +143,18 @@ public class PostListActivity extends AppCompatActivity {
             @Override
             public void onResponse(JSONObject response) {
                 mListChildren.remove(null);
-                mSwipeRefreshLayout.setRefreshing(false);
                 RedditPost redditPost = mGson.fromJson(response.toString(), RedditPost.class);
                 afterId = redditPost.getAfter();
                 Collections.addAll(mListChildren, redditPost.getChildrens());
                 mAdapter.notifyDataSetChanged();
+                mSwipeRefreshLayout.setRefreshing(false);
             }
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
                 VolleyLog.d("TAG", "Error" + error.getMessage());
-                mSwipeRefreshLayout.setRefreshing(false);
                 handleVolleyError(error);
+                mSwipeRefreshLayout.setRefreshing(false);
             }
         });
 
